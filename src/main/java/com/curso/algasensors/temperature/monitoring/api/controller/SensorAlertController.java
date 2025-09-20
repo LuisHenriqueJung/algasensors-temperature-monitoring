@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/sensors/{sensorId}/alert")
+@RequestMapping("/api/sensors/{sensorId}/alert")
 @RequiredArgsConstructor
 public class SensorAlertController {
 

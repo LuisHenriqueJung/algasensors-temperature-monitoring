@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/sensors/{sensorId}/monitoring")
+@RequestMapping("/api/sensors/{sensorId}/monitoring")
 @RequiredArgsConstructor
 public class SensorMonitoringController {
 
