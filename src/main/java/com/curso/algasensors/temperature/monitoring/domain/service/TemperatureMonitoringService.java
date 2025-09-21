@@ -1,0 +1,53 @@
+package com.curso.algasensors.temperature.monitoring.domain.service;
+
+import com.curso.algasensors.temperature.monitoring.api.model.TemperatureLogData;
+import com.curso.algasensors.temperature.monitoring.domain.model.SensorId;
+import com.curso.algasensors.temperature.monitoring.domain.model.SensorMonitoring;
+import com.curso.algasensors.temperature.monitoring.domain.model.TemperatureLog;
+import com.curso.algasensors.temperature.monitoring.domain.model.TemperatureLogId;
+import com.curso.algasensors.temperature.monitoring.domain.repository.SensorMonitoringRepository;
+import com.curso.algasensors.temperature.monitoring.domain.repository.TemperatureLogRepository;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.OffsetDateTime;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class TemperatureMonitoringService {
+    
+    private final SensorMonitoringRepository sensorMonitoringRepository;
+    private final TemperatureLogRepository temperatureLogRepository;
+
+    @Transactional
+    public void processTemperatureReading(TemperatureLogData temperatureLogData){
+        sensorMonitoringRepository.findById(new SensorId(temperatureLogData.getSensorId()))
+                .ifPresentOrElse(sensor -> handlerSensorMonitoring(temperatureLogData, sensor),
+                        ()->logIgnoredTemperature(temperatureLogData));
+    }
+
+    private void logIgnoredTemperature(TemperatureLogData temperatureLogData) {
+        log.info("Ignored temperature: SensorID {} temp {} at {}", temperatureLogData.getSensorId(),temperatureLogData.getValue(),OffsetDateTime.now());
+    }
+
+    private void handlerSensorMonitoring(TemperatureLogData temperatureLogData, SensorMonitoring sensor) {
+        if(sensor.isEnabled()){
+            sensor.setLastTemperature(temperatureLogData.getValue());
+            sensor.setUpdatedAt(OffsetDateTime.now());
+            sensorMonitoringRepository.save(sensor);
+
+            TemperatureLog temperatureLog = TemperatureLog.builder()
+                    .id(new TemperatureLogId(temperatureLogData.getId()))
+                    .registeredAt(temperatureLogData.getRegisteredAt())
+                    .value(temperatureLogData.getValue())
+                    .sensorId(new SensorId(temperatureLogData.getSensorId()))
+                    .build();
+            temperatureLogRepository.save(temperatureLog);
+        }else{
+            logIgnoredTemperature(temperatureLogData);
+        }
+    }
+}
