@@ -1,18 +1,16 @@
 package com.curso.algasensors.temperature.monitoring.infrastructure.rabbitmq;
 
 import com.curso.algasensors.temperature.monitoring.api.model.TemperatureLogData;
+import com.curso.algasensors.temperature.monitoring.domain.service.SensorAlertService;
 import com.curso.algasensors.temperature.monitoring.domain.service.TemperatureMonitoringService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-
-import static com.curso.algasensors.temperature.monitoring.infrastructure.rabbitmq.RabbitMQConfig.QUEUE_NAME;
+import static com.curso.algasensors.temperature.monitoring.infrastructure.rabbitmq.RabbitMQConfig.QUEUE_PROCESS_ALERTS;
+import static com.curso.algasensors.temperature.monitoring.infrastructure.rabbitmq.RabbitMQConfig.QUEUE_PROCESS_TEMPERATURE;
 
 @Slf4j
 @Component
@@ -20,9 +18,16 @@ import static com.curso.algasensors.temperature.monitoring.infrastructure.rabbit
 public class RabbitMQListener {
 
     private final TemperatureMonitoringService temperatureMonitoringService;
-    @RabbitListener(queues =QUEUE_NAME, concurrency = "2-4")
-    public void handler(@Payload TemperatureLogData temperatureLogData) throws InterruptedException {
+
+    private final SensorAlertService sensorAlertService;
+
+    @RabbitListener(queues = QUEUE_PROCESS_TEMPERATURE, concurrency = "2-4")
+    public void processTemperatureHandler(@Payload TemperatureLogData temperatureLogData) {
         temperatureMonitoringService.processTemperatureReading(temperatureLogData);
-        Thread.sleep(3000);
+    }
+
+    @RabbitListener(queues = QUEUE_PROCESS_ALERTS, concurrency = "2-4")
+    public void processAlertHandler(@Payload TemperatureLogData temperatureLogData) {
+        sensorAlertService.handlerSensorAlert(temperatureLogData);
     }
 }
